@@ -1,0 +1,57 @@
+import discord
+from discord.ext import commands
+import hashlib
+
+intents = discord.Intents.default()
+intents.members = True
+
+TOKEN = 'MTA5NzI1MzMyMzg4ODkzNTAyMg.GK2hwi.xbyme94Z_xZ2b07LkjzJJtk4SpMTFl05TUTdQc'
+
+GUILD_ID = 1001951314860855436  # Replace with your server ID
+LOG_CHANNEL_ID = 1062446253159489656  # Replace with your log channel ID
+
+SPECIFIED_PNG_1 = 'https://images-ext-1.discordapp.net/external/Hpym-CTQqGAOpGvbu1letZIQutfAzNUpUpbCg0otzVg/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/567841211616985089/94032240ae93d996f83cc5caa785cc12.png'
+SPECIFIED_PNG_2 = 'https://images-ext-1.discordapp.net/external/WyHtWqNiQQJNbcMYWqGq827nfJPtFmbFoRAyX2rrUBY/%3Fsize%3D4096/https/cdn.discordapp.com/avatars/787819446160719874/3efa5f7d634026ff8b5a9b383ecba5d6.png'
+
+bot = commands.Bot(command_prefix='.', intents=intents)
+
+def get_profile_picture_hash(profile_picture):
+    m = hashlib.sha256()
+    m.update(profile_picture)
+    return m.hexdigest()
+
+@bot.event
+async def on_member_join(member):
+    if member.name == 'chicago' or member.name == 'StephTradez(Wont DM)'or member.name == 'LIMITLE$$'or member.name == 'LIMITLESS'or member.name == 'LlMlTLE$$'or member.name == 'LlMITLE$$' :
+        await member.ban(reason='Matching username')
+        log_channel = bot.get_channel(1062446253159489656)
+        await log_channel.send(f'{member.mention} has been banned due to a matching username')
+
+    profile_picture_hash = get_profile_picture_hash(await member.avatar_url_as(format='png').read())
+    if profile_picture_hash in [SPECIFIED_PNG_1, SPECIFIED_PNG_2]:
+        log_channel = bot.get_channel(1062446253159489656)
+        message = await log_channel.send(f'{member.mention} has a matching profile picture. Would you like me to ban them?')
+        await message.add_reaction('👍')
+        await message.add_reaction('👎')
+
+        def check(reaction, user):
+            return user != bot.user and reaction.message == message and str(reaction.emoji) in ['👍', '👎']
+
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            await log_channel.send('Timeout: No action was taken.')
+        else:
+            if str(reaction.emoji) == '👍':
+                await member.ban(reason='Matching profile picture')
+                await log_channel.send(f'{member.mention} has been banned.')
+            else:
+                await log_channel.send('No action was taken.')
+
+@bot.event
+async def on_ready():
+    guild = bot.get_guild(1001951314860855436)
+    print(f'{bot.user} is connected to the following guild:\n'
+          f'{guild.name}(id: {guild.id})')
+
+bot.run(TOKEN)
